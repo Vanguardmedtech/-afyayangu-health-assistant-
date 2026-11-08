@@ -1,0 +1,6 @@
+{
+  "name": "Vanguard MedTech Consumer Companion",
+  "description": "AI-powered clinical triage, telemedicine access, diagnostic facility finder, and personal health companion for East Africa.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
