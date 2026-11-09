@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Globe, Shield, PhoneCall } from 'lucide-react';
+import { Menu, Globe, Shield, PhoneCall, ArrowLeft, Bell } from 'lucide-react';
 import { Language, UserProfile } from '../types';
 import { translations } from '../data/mockData';
 
@@ -8,7 +8,11 @@ interface HeaderProps {
   onToggleLanguage: () => void;
   onOpenDrawer: () => void;
   onOpenDoctorModal: () => void;
+  onOpenNotifications?: () => void;
+  unreadNotificationCount?: number;
   userProfile: UserProfile;
+  activeTab: 'chat' | 'doctor' | 'facilities' | 'tracker' | 'profile' | 'medication' | 'surveillance';
+  onGoHome: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,15 +20,33 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleLanguage,
   onOpenDrawer,
   onOpenDoctorModal,
+  onOpenNotifications,
+  unreadNotificationCount = 2,
   userProfile,
+  activeTab,
+  onGoHome,
 }) => {
   const t = translations[currentLanguage];
 
   return (
     <header className="sticky top-0 z-30 w-full bg-[#0A192F]/90 backdrop-blur-md border-b border-[#1E3A8A]/40 px-4 py-3 transition-colors duration-200">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
-        {/* Left: Hamburger Menu and Branding */}
-        <div className="flex items-center gap-3">
+        {/* Left: Go Back Button (if on non-chat view), Hamburger Menu and Branding */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {activeTab !== 'chat' && (
+            <button
+              onClick={onGoHome}
+              aria-label="Go Back to AfyaYangu Chat / Rudi Nyuma"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#112240] hover:bg-[#1E3A8A] border border-[#64FFDA]/50 hover:border-[#64FFDA] text-[#64FFDA] text-xs font-bold transition-all active:scale-95 shadow-md shadow-[#64FFDA]/10 group animate-fade-in"
+              title={currentLanguage === 'SW' ? 'Rudi Nyuma kwenye AfyaYangu Chat' : 'Back / Rudi Nyuma'}
+            >
+              <ArrowLeft className="w-4 h-4 text-[#64FFDA] group-hover:-translate-x-1 transition-transform" />
+              <span className="font-semibold tracking-wide">
+                {currentLanguage === 'SW' ? 'Rudi Nyuma' : 'Back / Rudi Nyuma'}
+              </span>
+            </button>
+          )}
+
           <button
             onClick={onOpenDrawer}
             aria-label="Open Navigation Menu"
@@ -34,7 +56,7 @@ export const Header: React.FC<HeaderProps> = ({
             <Menu className="w-5 h-5 transition-transform group-hover:scale-110 text-[#64FFDA]" />
           </button>
 
-          <div className="flex items-center gap-2.5 cursor-pointer" onClick={onOpenDrawer}>
+          <div className="flex items-center gap-2.5 cursor-pointer" onClick={onGoHome}>
             <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] shadow-md border border-[#64FFDA]/30">
               <Shield className="w-4 h-4 text-[#64FFDA]" />
               <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#64FFDA] rounded-full animate-ping opacity-75" />
@@ -57,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Right: Tele-doc quick shortcut & Language Toggle (EN | SW) */}
+        {/* Right: Tele-doc quick shortcut, Notification Bell & Language Toggle (EN | SW) */}
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={onOpenDoctorModal}
@@ -66,6 +88,23 @@ export const Header: React.FC<HeaderProps> = ({
             <PhoneCall className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
             <span>{currentLanguage === 'EN' ? 'Talk to Doctor (TZS 1k)' : 'Ongea na Daktari (TZS 1k)'}</span>
           </button>
+
+          {/* Simulated Smart Push Notifications Bell Icon */}
+          {onOpenNotifications && (
+            <button
+              onClick={onOpenNotifications}
+              className="relative p-2 rounded-full bg-[#112240] hover:bg-[#1E3A8A]/60 border border-[#233554] hover:border-[#64FFDA] text-[#E6F1FF] hover:text-[#64FFDA] transition-all duration-200 shadow-sm active:scale-95 group"
+              title={currentLanguage === 'SW' ? 'Arifa za Afya' : 'Health Notifications'}
+              aria-label="Health Notifications"
+            >
+              <Bell className="w-4 h-4 text-[#64FFDA] group-hover:rotate-12 transition-transform" />
+              {unreadNotificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-mono font-bold text-white shadow-sm ring-1 ring-[#0A192F]">
+                  {unreadNotificationCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* Bilingual Language Switcher (EN | SW) */}
           <button

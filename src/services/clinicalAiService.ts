@@ -23,6 +23,197 @@ function pickMultipleRandom<T>(items: T[], count: number): T[] {
 }
 
 /**
+ * Builds an explicit clinical cross-check evaluating the user query and symptoms
+ * against their active medications, known drug allergies, hemoglobin genotype,
+ * past surgical history, and special health/lifestyle status.
+ */
+function buildPharmacologyCrossCheck(
+  query: string,
+  userProfile: UserProfile,
+  isSwahili: boolean
+): string {
+  const q = query.toLowerCase();
+  const activeMeds = userProfile?.activeMedications || 'Artemether/Lumefantrine 80/480mg, Paracetamol 500mg';
+  const allergies = userProfile?.knownAllergies || 'Penicillin, Sulfa drugs, Peanuts';
+  const genotype = userProfile?.hemoglobinGenotype || 'AA (Normal)';
+  const surgeries = userProfile?.pastSurgeries || 'Appendectomy 2023';
+  const specialHealth = userProfile?.specialHealthStatus || ['None'];
+  const isPregnant = specialHealth.includes('Currently Pregnant');
+  const isLactating = specialHealth.includes('Lactating');
+  const isSmoker = specialHealth.includes('Smoking');
+  const isAlcohol = specialHealth.includes('Alcohol');
+
+  const lowerAllergies = allergies.toLowerCase();
+  const checks: string[] = [];
+
+  const asksAboutAntibiotics =
+    q.includes('antibiotic') ||
+    q.includes('penicillin') ||
+    q.includes('amox') ||
+    q.includes('ampicillin') ||
+    q.includes('augmentin') ||
+    q.includes('clavamox');
+  const asksAboutSulfa =
+    q.includes('sulfa') ||
+    q.includes('bactrim') ||
+    q.includes('septrin') ||
+    q.includes('cotrimoxazole') ||
+    q.includes('fansidar');
+  const asksAboutNsaid =
+    q.includes('aspirin') ||
+    q.includes('brufen') ||
+    q.includes('ibuprofen') ||
+    q.includes('diclofenac') ||
+    q.includes('painkiller');
+  const asksAboutPainOrFever =
+    q.includes('pain') ||
+    q.includes('fever') ||
+    q.includes('headache') ||
+    q.includes('homa') ||
+    q.includes('kichwa') ||
+    q.includes('maumivu');
+
+  if (isSwahili) {
+    checks.push(`Mzio Ulioandikwa (Documented Allergies): "${allergies}"`);
+    if (lowerAllergies.includes('penicillin')) {
+      if (asksAboutAntibiotics) {
+        checks.push(
+          `⛔ ONYO KUBWA LA MZIO: Mgonjwa ana mzio uliothibitishwa wa Penicillin! Epuka kabisa dawa zote za jamii ya Penicillin (kama Amoxicillin, Ampicillin, Augmentin). Tumia mbadala salama kama Azithromycin au Erythromycin chini ya ushauri wa daktari.`
+        );
+      } else {
+        checks.push(`Tahadhari ya Mzio: Dawa zote za jamii ya Penicillin zimezuiliwa kutokana na mzio.`);
+      }
+    }
+    if (lowerAllergies.includes('sulfa')) {
+      if (asksAboutSulfa) {
+        checks.push(
+          `⛔ ONYO KUBWA LA MZIO: Mgonjwa ana mzio wa dawa za Sulfa! Septrin (Co-trimoxazole/Bactrim) na Fansidar ni mwiko kabisa.`
+        );
+      } else {
+        checks.push(`Tahadhari ya Mzio: Jamii ya dawa za Sulfa (kama Septrin) imezuiliwa kutokana na mzio.`);
+      }
+    }
+    if (lowerAllergies.includes('aspirin') && asksAboutNsaid) {
+      checks.push(`⛔ ONYO LA MZIO: Epuka Aspirin/Brufen/Diclofenac; tumia Paracetamol pekee kwa uangalifu.`);
+    }
+
+    checks.push(`Dawa Unazotumia Sasa (Active Medications): "${activeMeds}"`);
+    if (activeMeds.toLowerCase().includes('paracetamol')) {
+      checks.push(
+        `Tahadhari ya Dozi ya Paracetamol: Kwa kuwa unatumia Paracetamol 500mg, usizidishe kiwango salama cha 4,000mg (vidonge 8 vya 500mg) ndani ya masaa 24 ili kulinda ini.`
+      );
+    }
+    if (activeMeds.toLowerCase().includes('artemether') || activeMeds.toLowerCase().includes('lumefantrine')) {
+      checks.push(
+        `Mseto wa ALU: Kunywa vidonge na maziwa au chakula chenye mafuta kidogo ili kufyonzwa vizuri, na kamilisha dozi zote 6 za siku 3 bila kukosa.`
+      );
+    }
+
+    if (genotype === 'SS (Sickle Cell Anemia)') {
+      checks.push(
+        `Vinasaba vya Damu (SS - Selimundu): Kunywa maji zaidi ya lita 3 kwa siku na linda mwili dhidi ya baridi na maambukizi kuzuia 'sickle crisis'.`
+      );
+    } else if (genotype === 'AS (Sickle Cell Trait)') {
+      checks.push(`Vinasaba vya Damu (AS - Sickle Trait): Zingatia unywaji wa maji ya kutosha wakati wa joto au mazoezi.`);
+    }
+
+    if (isPregnant) {
+      checks.push(
+        `🤰 TAHADHARI YA UJAUZITO: Mgonjwa ni Mjamzito. Epuka dawa za maumivu kama Ibuprofen/Diclofenac na hakikisha dawa zote zinathibitishwa na daktari wa uzazi.`
+      );
+    }
+    if (isLactating) {
+      checks.push(`🤱 TAHADHARI YA UNYONYESHAJI: Mgonjwa ananyonyesha; dawa yoyote lazima iwe salama kwa mtoto kupitia maziwa.`);
+    }
+    if (isAlcohol || isSmoker) {
+      checks.push(
+        `⚠️ TAHADHARI YA MTINDO WA MAISHA: Mgonjwa anatumia ${isAlcohol ? 'pombe' : ''}${isAlcohol && isSmoker ? ' na ' : ''}${isSmoker ? 'sigara' : ''}; epuka pombe wakati unatumia dawa ili kuzuia kuharibu ini au kuingiliana na dawa.`
+      );
+    }
+
+    if (surgeries && surgeries.trim() && surgeries.toLowerCase() !== 'none') {
+      if (q.includes('tumbo') || q.includes('stomach') || q.includes('maumivu') || q.includes('pain')) {
+        checks.push(
+          `Upasuaji wa Awali (${surgeries}): Kwa maumivu ya tumbo, daktari anapaswa kutathmini kama yanahusiana na eneo la upasuaji.`
+        );
+      }
+    }
+
+    return `\n\n• 💊 UCHUNGUZI WA DAWA NA MZIO (PHARMACOLOGICAL SAFETY CROSS-CHECK):\n${checks.map((c) => `  - ${c}`).join('\n')}`;
+  } else {
+    // English Cross-Check
+    checks.push(`Documented Allergies: "${allergies}"`);
+    if (lowerAllergies.includes('penicillin')) {
+      if (asksAboutAntibiotics) {
+        checks.push(
+          `⛔ CRITICAL ALLERGY CONTRAINDICATION: Patient has documented Penicillin allergy! Do NOT take Amoxicillin, Ampicillin, or Augmentin. Safer alternative antibiotic classes include macrolides (Azithromycin, Erythromycin) under clinical supervision.`
+        );
+      } else {
+        checks.push(`Allergy Protocol: Penicillin-class antibiotics are strictly contraindicated.`);
+      }
+    }
+    if (lowerAllergies.includes('sulfa')) {
+      if (asksAboutSulfa) {
+        checks.push(
+          `⛔ CRITICAL ALLERGY CONTRAINDICATION: Patient has documented Sulfa drug allergy! Septrin (Co-trimoxazole/Bactrim) and Fansidar are contraindicated.`
+        );
+      } else {
+        checks.push(`Allergy Protocol: Sulfa-based antimicrobials (Septrin/Bactrim) are contraindicated.`);
+      }
+    }
+    if (lowerAllergies.includes('aspirin') && asksAboutNsaid) {
+      checks.push(`⛔ ALLERGY CONTRAINDICATION: Patient has NSAID/Aspirin sensitivity. Avoid Ibuprofen and Diclofenac; use Paracetamol only as indicated.`);
+    }
+
+    checks.push(`Active Medications: "${activeMeds}"`);
+    if (activeMeds.toLowerCase().includes('paracetamol')) {
+      checks.push(
+        `Dosage & Cumulative Ceiling: You are currently on Paracetamol 500mg. Do not exceed 4,000mg in 24 hours (maximum 8 tablets of 500mg) to prevent acute hepatic toxicity.`
+      );
+    }
+    if (activeMeds.toLowerCase().includes('artemether') || activeMeds.toLowerCase().includes('lumefantrine')) {
+      checks.push(
+        `Antimalarial Regimen (ALU): Consume doses with milk or a lipid-containing meal for optimal bioavailability, and complete the full 6-dose course over 3 days.`
+      );
+    }
+
+    if (genotype === 'SS (Sickle Cell Anemia)') {
+      checks.push(
+        `Hemoglobin Genotype (SS - Sickle Cell): Dehydration and fever accelerate erythrocyte sickling. Maintain fluid intake >3.0 L/day and seek urgent care for any febrile episode.`
+      );
+    } else if (genotype === 'AS (Sickle Cell Trait)') {
+      checks.push(
+        `Hemoglobin Genotype (AS - Sickle Trait): Ensure vigorous hydration during high exertion or ambient heat to prevent renal papillary stress.`
+      );
+    }
+
+    if (isPregnant) {
+      checks.push(
+        `🤰 OBSTETRIC SAFETY ALERT: Patient is Currently Pregnant. NSAIDs (Ibuprofen, Diclofenac) and unapproved antibiotics are contraindicated. Obtain obstetrician clearance for any new medication.`
+      );
+    }
+    if (isLactating) {
+      checks.push(`🤱 LACTATION PRECAUTION: Patient is Breastfeeding. Prescribed compounds must be verified safe for maternal milk excretion.`);
+    }
+    if (isAlcohol || isSmoker) {
+      checks.push(
+        `⚠️ LIFESTYLE INTERACTION ALERT: Documented ${isAlcohol ? 'alcohol consumption' : ''}${isAlcohol && isSmoker ? ' and ' : ''}${isSmoker ? 'smoking' : ''}. Avoid alcohol during active pharmacotherapy to prevent potentiated hepatotoxicity.`
+      );
+    }
+
+    if (surgeries && surgeries.trim() && surgeries.toLowerCase() !== 'none') {
+      if (q.includes('stomach') || q.includes('tumbo') || q.includes('abdomen') || q.includes('pain')) {
+        checks.push(
+          `Surgical History (${surgeries}): In evaluating abdominal pain, post-surgical adhesion etiology should be evaluated by an examining surgeon.`
+        );
+      }
+    }
+
+    return `\n\n• 💊 CLINICAL PHARMACOLOGY & DRUG-ALLERGY CROSS-CHECK:\n${checks.map((c) => `  - ${c}`).join('\n')}`;
+  }
+}
+
+/**
  * Dynamic keyword parser and real-time medical simulation engine.
  * Parses user input, detects symptoms, modifiers, and language,
  * and dynamically synthesizes a customized, randomized clinical response.
@@ -33,6 +224,32 @@ export async function sendChatMessageToGemini(
   userProfile: UserProfile,
   currentLanguage: Language
 ): Promise<ClinicalResponse> {
+  // First, attempt server-side Gemini endpoint with rapid timeout
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2500);
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: query,
+        history,
+        userProfile,
+        language: currentLanguage,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data && data.text && data.assessment) {
+        return data;
+      }
+    }
+  } catch (e) {
+    // Fall back to client simulation engine
+  }
+
   // Simulate natural typing delay (450ms - 750ms) for responsive presentation feel
   const delayMs = 450 + Math.floor(Math.random() * 300);
   await new Promise((resolve) => setTimeout(resolve, delayMs));
@@ -47,6 +264,12 @@ export async function sendChatMessageToGemini(
   const hasDiabetes = chronicList.includes('Diabetes');
   const hasAsthma = chronicList.includes('Asthma');
   const hasHiv = chronicList.includes('HIV');
+
+  const activeMeds = userProfile?.activeMedications || 'Artemether/Lumefantrine 80/480mg, Paracetamol 500mg';
+  const allergies = userProfile?.knownAllergies || 'Penicillin, Sulfa drugs, Peanuts';
+  const genotype = userProfile?.hemoglobinGenotype || 'AA (Normal)';
+  const surgeries = userProfile?.pastSurgeries || 'Appendectomy 2023';
+  const specialHealthList = userProfile?.specialHealthStatus || ['None'];
 
   // 1. Language Detection (Detect Swahili if user explicitly typed Swahili terms or language toggle is SW)
   const isSwahili =
@@ -267,11 +490,13 @@ export async function sendChatMessageToGemini(
       summary = 'Ushauri wa jumla wa kliniki na ufuatiliaji wa dalili.';
     }
 
+    const crossCheckBlock = buildPharmacologyCrossCheck(query, userProfile, true);
+
     const responseText = `${greeting}
 
 Tathmini ya Kliniki:
 • ${empathyPhrase}
-• ${clinicalAssessment}${chronicNote}
+• ${clinicalAssessment}${chronicNote}${crossCheckBlock}
 
 Mwongozo wa Hatua kwa Hatua:
 ${steps.map((st, i) => `${i + 1}. ${st}`).join('\n')}
@@ -433,11 +658,13 @@ ${emergencyWarning}`;
       summary = 'Primary clinical advisory and symptom surveillance.';
     }
 
+    const crossCheckBlock = buildPharmacologyCrossCheck(query, userProfile, false);
+
     const responseText = `${greeting}
 
 Clinical Assessment:
 • ${empathyPhrase}
-• ${clinicalAssessment}${chronicNote}
+• ${clinicalAssessment}${chronicNote}${crossCheckBlock}
 
 Step-by-Step Care Guide:
 ${steps.map((st, i) => `${i + 1}. ${st}`).join('\n')}

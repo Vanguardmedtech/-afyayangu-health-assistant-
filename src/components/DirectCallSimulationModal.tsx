@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Activity,
   Heart,
+  ArrowLeft,
 } from 'lucide-react';
 import { Doctor, Language, UserProfile } from '../types';
 
@@ -74,13 +75,23 @@ export const DirectCallSimulationModal: React.FC<DirectCallSimulationModalProps>
     <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4 bg-black/90 backdrop-blur-lg animate-fade-in">
       <div className="relative w-full max-w-md bg-gradient-to-b from-[#112240] via-[#0A192F] to-[#060D17] border-2 border-[#1E3A8A] rounded-3xl shadow-2xl p-6 flex flex-col items-center justify-between min-h-[520px]">
         {/* Top Call Status Bar */}
-        <div className="w-full flex items-center justify-between text-xs text-[#8892B0] border-b border-[#1E3A8A]/40 pb-3">
+        <div className="w-full flex items-center justify-between text-xs text-[#8892B0] border-b border-[#1E3A8A]/40 pb-3 gap-2">
+          {/* Prominent Go Back Arrow Button */}
+          <button
+            onClick={handleEndCall}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0A192F] hover:bg-[#1E3A8A] border border-[#64FFDA]/40 hover:border-[#64FFDA] text-[#64FFDA] text-xs font-bold transition-all active:scale-95 shadow-sm group"
+            title="End Call & Return to Main Screen"
+          >
+            <ArrowLeft className="w-4 h-4 text-[#64FFDA] group-hover:-translate-x-1 transition-transform" />
+            <span>{currentLanguage === 'SW' ? 'Rudi Nyuma' : 'Back / Rudi Nyuma'}</span>
+          </button>
+
           <div className="flex items-center gap-1.5 text-emerald-400">
             <ShieldCheck className="w-4 h-4" />
-            <span className="font-mono text-[11px] font-bold">256-bit Encrypted Private Line</span>
+            <span className="font-mono text-[10px] sm:text-[11px] font-bold hidden sm:inline">256-bit Encrypted</span>
           </div>
           <div className="text-[11px] font-mono text-[#64FFDA]">
-            {status === 'connecting' ? 'Connecting to Dar Clinic...' : formatTimer(callDuration)}
+            {status === 'connecting' ? 'Connecting...' : formatTimer(callDuration)}
           </div>
         </div>
 

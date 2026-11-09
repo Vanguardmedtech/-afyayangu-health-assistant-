@@ -40,6 +40,175 @@ app.get('/api/health', (req: Request, res: Response) => {
 });
 
 /**
+ * Builds an explicit clinical cross-check evaluating the user query and symptoms
+ * against their active medications, known drug allergies, hemoglobin genotype,
+ * past surgical history, and special health/lifestyle status.
+ */
+function buildServerPharmacologyCrossCheck(
+  message: string,
+  userProfile: any,
+  isSwahili: boolean
+): string {
+  const q = message.toLowerCase();
+  const activeMeds = userProfile?.activeMedications || 'Artemether/Lumefantrine 80/480mg, Paracetamol 500mg';
+  const allergies = userProfile?.knownAllergies || 'Penicillin, Sulfa drugs, Peanuts';
+  const genotype = userProfile?.hemoglobinGenotype || 'AA (Normal)';
+  const surgeries = userProfile?.pastSurgeries || 'Appendectomy 2023';
+  const specialHealth: string[] = userProfile?.specialHealthStatus || ['None'];
+  const isPregnant = specialHealth.includes('Currently Pregnant');
+  const isLactating = specialHealth.includes('Lactating');
+  const isSmoker = specialHealth.includes('Smoking');
+  const isAlcohol = specialHealth.includes('Alcohol');
+
+  const lowerAllergies = allergies.toLowerCase();
+  const checks: string[] = [];
+
+  const asksAboutAntibiotics =
+    q.includes('antibiotic') ||
+    q.includes('penicillin') ||
+    q.includes('amox') ||
+    q.includes('ampicillin') ||
+    q.includes('augmentin');
+  const asksAboutSulfa =
+    q.includes('sulfa') ||
+    q.includes('bactrim') ||
+    q.includes('septrin') ||
+    q.includes('cotrimoxazole') ||
+    q.includes('fansidar');
+  const asksAboutNsaid =
+    q.includes('aspirin') ||
+    q.includes('brufen') ||
+    q.includes('ibuprofen') ||
+    q.includes('diclofenac');
+
+  if (isSwahili) {
+    checks.push(`Mzio Ulioandikwa (Documented Allergies): "${allergies}"`);
+    if (lowerAllergies.includes('penicillin')) {
+      if (asksAboutAntibiotics) {
+        checks.push(
+          `⛔ ONYO KUBWA LA MZIO: Mgonjwa ana mzio wa Penicillin! Usitumie Amoxicillin/Ampicillin/Augmentin. Tumia mbadala kama Azithromycin chini ya daktari.`
+        );
+      } else {
+        checks.push(`Tahadhari ya Mzio: Dawa za jamii ya Penicillin zimezuiliwa.`);
+      }
+    }
+    if (lowerAllergies.includes('sulfa')) {
+      if (asksAboutSulfa) {
+        checks.push(
+          `⛔ ONYO KUBWA LA MZIO: Mgonjwa ana mzio wa Sulfa! Septrin (Bactrim) na Fansidar zimepigwa marufuku.`
+        );
+      } else {
+        checks.push(`Tahadhari ya Mzio: Jamii ya dawa za Sulfa imezuiliwa.`);
+      }
+    }
+    if (lowerAllergies.includes('aspirin') && asksAboutNsaid) {
+      checks.push(`⛔ ONYO LA MZIO: Epuka Aspirin/Brufen/Diclofenac; tumia Paracetamol pekee kwa uangalifu.`);
+    }
+
+    checks.push(`Dawa Unazotumia Sasa (Active Medications): "${activeMeds}"`);
+    if (activeMeds.toLowerCase().includes('paracetamol')) {
+      checks.push(
+        `Tahadhari ya Dozi: Unatumia Paracetamol 500mg; usizidishe kiwango salama cha 4,000mg ndani ya masaa 24 kuzuia sumu kwenye ini.`
+      );
+    }
+    if (activeMeds.toLowerCase().includes('artemether') || activeMeds.toLowerCase().includes('lumefantrine')) {
+      checks.push(`Mseto wa ALU: Kunywa na maziwa au chakula cha mafuta ili ifyonzwe vizuri na kamilisha dozi zote 6.`);
+    }
+
+    if (genotype === 'SS (Sickle Cell Anemia)') {
+      checks.push(
+        `Vinasaba vya Damu (SS - Selimundu): Kunywa maji mengi (>3L) na epuka baridi kali kuzuia maumivu ya selimundu.`
+      );
+    } else if (genotype === 'AS (Sickle Cell Trait)') {
+      checks.push(`Vinasaba vya Damu (AS - Sickle Trait): Zingatia maji wakati wa joto au mazoezi.`);
+    }
+
+    if (isPregnant) {
+      checks.push(`🤰 TAHADHARI YA UJAUZITO: Mgonjwa ni mjamzito; epuka NSAIDs (Ibuprofen/Diclofenac) na thibitisha dawa zote na daktari wa uzazi.`);
+    }
+    if (isLactating) {
+      checks.push(`🤱 TAHADHARI YA UNYONYESHAJI: Mgonjwa ananyonyesha; dawa lazima ziwe salama kwa mtoto kupitia maziwa.`);
+    }
+    if (isAlcohol || isSmoker) {
+      checks.push(`⚠️ TAHADHARI YA MTINDO WA MAISHA: Mgonjwa anatumia ${isAlcohol ? 'pombe' : ''}${isAlcohol && isSmoker ? ' na ' : ''}${isSmoker ? 'sigara' : ''}; epuka pombe wakati unatumia dawa ili kulinda ini.`);
+    }
+
+    if (surgeries && surgeries.trim() && surgeries.toLowerCase() !== 'none' && (q.includes('tumbo') || q.includes('maumivu'))) {
+      checks.push(`Upasuaji wa Awali (${surgeries}): Daktari anapaswa kuangazia kama maumivu yanahusiana na eneo la upasuaji.`);
+    }
+
+    return `\n\n• 💊 UCHUNGUZI WA DAWA NA MZIO (PHARMACOLOGICAL SAFETY CROSS-CHECK):\n${checks.map((c) => `  - ${c}`).join('\n')}`;
+  } else {
+    checks.push(`Documented Allergies: "${allergies}"`);
+    if (lowerAllergies.includes('penicillin')) {
+      if (asksAboutAntibiotics) {
+        checks.push(
+          `⛔ CRITICAL ALLERGY CONTRAINDICATION: Patient has documented Penicillin allergy! Do NOT take Amoxicillin, Ampicillin, or Augmentin. Safer alternative classes include macrolides (Azithromycin, Erythromycin) under clinical supervision.`
+        );
+      } else {
+        checks.push(`Allergy Protocol: Penicillin-class antibiotics are strictly contraindicated.`);
+      }
+    }
+    if (lowerAllergies.includes('sulfa')) {
+      if (asksAboutSulfa) {
+        checks.push(
+          `⛔ CRITICAL ALLERGY CONTRAINDICATION: Patient has documented Sulfa drug allergy! Septrin (Co-trimoxazole/Bactrim) and Fansidar are contraindicated.`
+        );
+      } else {
+        checks.push(`Allergy Protocol: Sulfa-based antimicrobials (Septrin/Bactrim) are contraindicated.`);
+      }
+    }
+    if (lowerAllergies.includes('aspirin') && asksAboutNsaid) {
+      checks.push(`⛔ ALLERGY CONTRAINDICATION: Patient has NSAID/Aspirin sensitivity. Avoid Ibuprofen and Diclofenac; use Paracetamol only as indicated.`);
+    }
+
+    checks.push(`Active Medications: "${activeMeds}"`);
+    if (activeMeds.toLowerCase().includes('paracetamol')) {
+      checks.push(
+        `Dosage & Cumulative Ceiling: You are currently on Paracetamol 500mg. Do not exceed 4,000mg in 24 hours (maximum 8 tablets of 500mg) to prevent acute hepatic toxicity.`
+      );
+    }
+    if (activeMeds.toLowerCase().includes('artemether') || activeMeds.toLowerCase().includes('lumefantrine')) {
+      checks.push(
+        `Antimalarial Regimen (ALU): Consume doses with milk or a lipid-containing meal for optimal bioavailability, and complete the full 6-dose course over 3 days.`
+      );
+    }
+
+    if (genotype === 'SS (Sickle Cell Anemia)') {
+      checks.push(
+        `Hemoglobin Genotype (SS - Sickle Cell): Dehydration and fever accelerate erythrocyte sickling. Maintain fluid intake >3.0 L/day and seek urgent care for any febrile episode.`
+      );
+    } else if (genotype === 'AS (Sickle Cell Trait)') {
+      checks.push(
+        `Hemoglobin Genotype (AS - Sickle Trait): Ensure vigorous hydration during high exertion or ambient heat to prevent renal papillary stress.`
+      );
+    }
+
+    if (isPregnant) {
+      checks.push(
+        `🤰 OBSTETRIC SAFETY ALERT: Patient is Currently Pregnant. NSAIDs (Ibuprofen, Diclofenac) and unapproved antibiotics are contraindicated. Obtain obstetrician clearance for any new medication.`
+      );
+    }
+    if (isLactating) {
+      checks.push(`🤱 LACTATION PRECAUTION: Patient is Breastfeeding. Prescribed compounds must be verified safe for maternal milk excretion.`);
+    }
+    if (isAlcohol || isSmoker) {
+      checks.push(
+        `⚠️ LIFESTYLE INTERACTION ALERT: Documented ${isAlcohol ? 'alcohol consumption' : ''}${isAlcohol && isSmoker ? ' and ' : ''}${isSmoker ? 'smoking' : ''}. Avoid alcohol during active pharmacotherapy to prevent potentiated hepatotoxicity.`
+      );
+    }
+
+    if (surgeries && surgeries.trim() && surgeries.toLowerCase() !== 'none' && (q.includes('stomach') || q.includes('pain') || q.includes('abdomen'))) {
+      checks.push(
+        `Surgical History (${surgeries}): In evaluating abdominal pain, post-surgical adhesion etiology should be evaluated by an examining surgeon.`
+      );
+    }
+
+    return `\n\n• 💊 CLINICAL PHARMACOLOGY & DRUG-ALLERGY CROSS-CHECK:\n${checks.map((c) => `  - ${c}`).join('\n')}`;
+  }
+}
+
+/**
  * Dynamic contextual clinical reasoning engine for East African medical triage.
  * Generates custom, polite, and medically sound advice when live API key is pending or in transit.
  */
@@ -271,10 +440,12 @@ Structured Step-by-Step Guidance:
 ⚠️ EMERGENCY TRIAGE WARNING / TAHADHARI YA DHARURA:
 If you develop acute red flag symptoms such as severe shortness of breath, sudden unremitting pain, convulsions, continuous vomiting, or altered consciousness, call emergency dispatch 112 / 115 immediately or proceed to Muhimbili National Hospital / Aga Khan Emergency!`;
 
+  const crossCheckBlock = buildServerPharmacologyCrossCheck(message, userProfile, isSwahili);
+
   return {
-    text,
+    text: text + crossCheckBlock,
     severity: 'mild' as const,
-    summary: 'Clinical triage guidance tailored to patient profile and symptom history.',
+    summary: 'Clinical triage guidance tailored to patient profile, active medications, and drug allergies.',
     steps: [
       'Monitor and log vital signs in Vanguard Health Tracker',
       'Maintain regular hydration and restorative rest',
@@ -302,6 +473,11 @@ app.post('/api/chat', async (req: Request, res: Response) => {
   const patientGender = userProfile?.gender || 'Male';
   const patientNationality = userProfile?.nationality || 'Tanzanian';
   const chronicConditions = userProfile?.chronicConditions?.join(', ') || 'None';
+  const patientActiveMeds = userProfile?.activeMedications || 'Artemether/Lumefantrine 80/480mg, Paracetamol 500mg';
+  const patientAllergies = userProfile?.knownAllergies || 'Penicillin, Sulfa drugs, Peanuts';
+  const patientGenotype = userProfile?.hemoglobinGenotype || 'AA (Normal)';
+  const patientSurgeries = userProfile?.pastSurgeries || 'Appendectomy 2023';
+  const patientSpecialHealth = Array.isArray(userProfile?.specialHealthStatus) ? userProfile.specialHealthStatus.join(', ') : 'None';
 
   // If live Gemini client is available and API key is configured, execute via Gemini model
   if (ai && process.env.GEMINI_API_KEY) {
@@ -317,6 +493,11 @@ Patient Baseline Clinical Context:
 - Gender: ${patientGender}
 - Nationality: ${patientNationality}
 - Documented Chronic Conditions: ${chronicConditions}
+- Active Medications & Dosage: ${patientActiveMeds}
+- Known Allergies & Drug Reactions: ${patientAllergies}
+- Hemoglobin Genotype: ${patientGenotype}
+- Past Surgeries & Major Hospitalizations: ${patientSurgeries}
+- Special Health Status: ${patientSpecialHealth}
 - Current App Language Preference: ${language}
 
 CLINICAL ADVISOR RULES & PERSONA:
@@ -324,9 +505,14 @@ CLINICAL ADVISOR RULES & PERSONA:
    - Greet the patient politely and warmly using their first name (e.g., "Hello ${patientName.split(' ')[0]}" or "Habari ${patientName.split(' ')[0]}").
    - Acknowledge their symptoms with genuine empathy and clinical clarity.
    - Tailor your clinical reasoning directly to their age, gender, and chronic conditions (e.g. if the patient has Sickle Cell, Hypertension, Diabetes, or Asthma, highlight critical considerations such as avoiding certain NSAIDs, monitoring BP/glucose, or watching for acute crises).
-2. Structured Step-by-Step Guidance:
+2. Mandatory Clinical Safety & Pharmacology Cross-Check:
+   - Always explicitly cross-check the patient's symptoms or medication inquiries against their Active Medications (${patientActiveMeds}) and Known Allergies (${patientAllergies}).
+   - If any medication they mention or ask about (or that is commonly used for their symptoms) is contraindicated by their allergies (e.g., Penicillins, Sulfa, NSAIDs), explicitly warn them in bold, explain the severe allergic hazard, and recommend safe alternative classes.
+   - Cross-check against their active medications to prevent adverse drug-drug interactions or cumulative toxic dosages (e.g., Paracetamol max dosage 4,000mg/day, Artemether/Lumefantrine food requirements).
+   - Account for Hemoglobin Genotype (${patientGenotype}), Special Health Status (${patientSpecialHealth} - such as pregnancy or lactation precautions, alcohol/smoking interactions), and Past Surgeries (${patientSurgeries}) in all clinical advice.
+3. Structured Step-by-Step Guidance:
    - Provide 3-4 structured, practical numbered recommendations for immediate home care, fluid hydration, monitoring, or seeking certified laboratory screening (e.g. mRDT for malaria, full blood picture, stool examination, blood pressure checks).
-3. Swahili-English Code-Switched Emergency Triage Warning:
+4. Swahili-English Code-Switched Emergency Triage Warning:
    - Always include a prominent, bilingual emergency alert section:
    ⚠️ TAHADHARI YA DHARURA / EMERGENCY TRIAGE:
    Highlight red flag danger signs (e.g. convulsions / degedege, severe breathlessness / upungufu wa pumzi, persistent vomiting, loss of consciousness, severe chest pressure) and explicitly direct the patient to call emergency dispatch 112 / 115 or report immediately to Muhimbili National Hospital, Aga Khan Hospital, or the nearest 24/7 emergency unit.

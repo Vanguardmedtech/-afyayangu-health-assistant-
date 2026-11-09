@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, UserCheck, HeartPulse, Sparkles, ArrowRight } from 'lucide-react';
+import { ShieldCheck, UserCheck, HeartPulse, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
 import { ChronicCondition, Language, UserProfile } from '../types';
 import { translations } from '../data/mockData';
 
@@ -97,23 +97,31 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
       <div className="relative w-full max-w-xl bg-[#0A192F] border-2 border-[#1E3A8A] rounded-2xl shadow-2xl overflow-hidden my-4">
         {/* Top Decorative Clinical Banner */}
-        <div className="bg-gradient-to-r from-[#1E3A8A] via-[#2563EB] to-[#112240] p-5 sm:p-6 text-white relative">
+        <div className="bg-gradient-to-r from-[#1E3A8A] via-[#2563EB] to-[#112240] p-4 sm:p-5 text-white relative flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-[#0A192F]/60 backdrop-blur-sm border border-[#64FFDA]/40 flex items-center justify-center shadow-lg">
-              <ShieldCheck className="w-6 h-6 text-[#64FFDA]" />
+            {/* Prominent Go Back Button */}
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0A192F]/80 hover:bg-[#0A192F] border border-[#64FFDA]/40 hover:border-[#64FFDA] text-[#64FFDA] text-xs font-bold transition-all active:scale-95 shadow-md group shrink-0"
+              title="Return to Main Landing View"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#64FFDA] group-hover:-translate-x-1 transition-transform" />
+              <span>{currentLanguage === 'SW' ? 'Rudi Nyuma' : 'Back / Rudi Nyuma'}</span>
+            </button>
+
+            <div className="w-10 h-10 rounded-xl bg-[#0A192F]/60 backdrop-blur-sm border border-[#64FFDA]/40 items-center justify-center shadow-lg hidden sm:flex">
+              <ShieldCheck className="w-5 h-5 text-[#64FFDA]" />
             </div>
             <div>
-              <span className="inline-block px-2 py-0.5 text-[10px] font-mono tracking-wider uppercase rounded bg-[#64FFDA]/20 text-[#64FFDA] border border-[#64FFDA]/30 font-bold mb-1">
+              <span className="inline-block px-2 py-0.5 text-[10px] font-mono tracking-wider uppercase rounded bg-[#64FFDA]/20 text-[#64FFDA] border border-[#64FFDA]/30 font-bold mb-0.5">
                 Clinical Onboarding
               </span>
-              <h2 className="text-xl sm:text-2xl font-heading font-extrabold text-[#E6F1FF] tracking-tight">
+              <h2 className="text-base sm:text-xl font-heading font-extrabold text-[#E6F1FF] tracking-tight">
                 {t.registration.modalTitle}
               </h2>
             </div>
           </div>
-          <p className="text-xs sm:text-sm text-[#E6F1FF]/80 mt-2">
-            {t.registration.modalSubtitle}
-          </p>
         </div>
 
         {/* Modal Form Content */}

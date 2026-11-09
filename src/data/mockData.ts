@@ -12,6 +12,11 @@ export const initialUserProfile: UserProfile = {
   emergencyContact: '+255 784 112 900 (Esther Denis - Sister)',
   nhifNumber: 'NHIF-TZ-8849-0129',
   isRegistered: false, // will show registration on first launch, or can skip
+  activeMedications: 'Artemether/Lumefantrine 80/480mg, Paracetamol 500mg',
+  knownAllergies: 'Penicillin, Sulfa drugs, Peanuts',
+  hemoglobinGenotype: 'AA (Normal)',
+  pastSurgeries: 'Appendectomy 2023',
+  specialHealthStatus: ['None'],
 };
 
 export const verifiedDoctors: Doctor[] = [
@@ -487,6 +492,12 @@ export const translations = {
       chronicConditions: 'Documented Chronic Conditions',
       emergencyContact: 'Emergency Contact Person',
       saveChanges: 'Save Profile Changes',
+      clinicalSection: 'Clinical Pharmacology & Surgical History',
+      activeMedications: 'Active Medications & Dosage',
+      knownAllergies: 'Known Allergies & Drug Reactions',
+      hemoglobinGenotype: 'Hemoglobin Genotype',
+      pastSurgeries: 'Past Surgeries & Major Hospitalizations',
+      specialHealthStatus: 'Special Health Status & Lifestyle',
     },
   },
   SW: {
@@ -578,6 +589,12 @@ export const translations = {
       chronicConditions: 'Magonjwa Sugu Yaliyoandikwa',
       emergencyContact: 'Mtu wa Dharura (Next of Kin)',
       saveChanges: 'Hifadhi Mabadiliko',
+      clinicalSection: 'Taarifa za Dawa, Mzio na Upasuaji',
+      activeMedications: 'Dawa Unazotumia Sasa & Vipimo (Dosage)',
+      knownAllergies: 'Mzio wa Dawa & Vyakula (Allergies)',
+      hemoglobinGenotype: 'Aina ya Vinasaba vya Damu (Genotype)',
+      pastSurgeries: 'Upasuaji wa Awali & Kulazwa Hospitali',
+      specialHealthStatus: 'Hali Maalumu ya Afya na Mtindo wa Maisha',
     },
   },
 };

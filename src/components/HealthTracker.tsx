@@ -12,15 +12,20 @@ import {
   Download,
   X,
   Share2,
+  ArrowLeft,
 } from 'lucide-react';
-import { HealthMetricEntry, Language, SavedConsultation } from '../types';
+import { HealthMetricEntry, Language, SavedConsultation, UserProfile } from '../types';
 import { translations } from '../data/mockData';
+import { ConsultationSummaryPayload } from './ShareSummaryModal';
 
 interface HealthTrackerProps {
   metrics: HealthMetricEntry[];
   onAddMetric: (entry: HealthMetricEntry) => void;
   savedConsultations: SavedConsultation[];
   currentLanguage: Language;
+  userProfile?: UserProfile;
+  onOpenShareModal?: (payload: ConsultationSummaryPayload) => void;
+  onGoHome?: () => void;
 }
 
 export const HealthTracker: React.FC<HealthTrackerProps> = ({
@@ -28,6 +33,9 @@ export const HealthTracker: React.FC<HealthTrackerProps> = ({
   onAddMetric,
   savedConsultations,
   currentLanguage,
+  userProfile,
+  onOpenShareModal,
+  onGoHome,
 }) => {
   const t = translations[currentLanguage];
 
@@ -110,6 +118,17 @@ Certified by Vanguard Tele-Triage Network Tanzania`;
       {/* Top Banner */}
       <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-[#112240] via-[#1E3A8A]/40 to-[#0A192F] border border-[#1E3A8A] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
         <div className="flex items-center gap-3.5">
+          {onGoHome && (
+            <button
+              onClick={onGoHome}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0A192F] hover:bg-[#1E3A8A] border border-[#64FFDA]/40 hover:border-[#64FFDA] text-[#64FFDA] text-xs font-bold transition-all active:scale-95 shadow-sm group"
+              title="Return to AfyaYangu Chat"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#64FFDA] group-hover:-translate-x-1 transition-transform" />
+              <span>{currentLanguage === 'SW' ? 'Rudi Nyuma' : 'Back / Rudi Nyuma'}</span>
+            </button>
+          )}
+
           <div className="w-12 h-12 rounded-xl bg-[#1E3A8A] border border-[#64FFDA]/30 flex items-center justify-center text-[#64FFDA] shadow-md">
             <Activity className="w-6 h-6 text-[#64FFDA]" />
           </div>
@@ -316,8 +335,19 @@ Certified by Vanguard Tele-Triage Network Tanzania`;
       {isLogModalOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
           <div className="relative w-full max-w-md bg-[#0A192F] border-2 border-[#1E3A8A] rounded-2xl shadow-2xl p-5 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#1E3A8A]/40 pb-3">
-              <h3 className="font-heading font-bold text-base text-[#E6F1FF]">Log New Clinical Vitals</h3>
+            <div className="flex items-center justify-between border-b border-[#1E3A8A]/40 pb-3 gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsLogModalOpen(false)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#112240] hover:bg-[#1E3A8A] border border-[#64FFDA]/40 hover:border-[#64FFDA] text-[#64FFDA] text-xs font-bold transition-all active:scale-95 shadow-sm group shrink-0"
+                  title="Close & Return"
+                >
+                  <ArrowLeft className="w-4 h-4 text-[#64FFDA] group-hover:-translate-x-1 transition-transform" />
+                  <span>{currentLanguage === 'SW' ? 'Rudi Nyuma' : 'Back / Rudi Nyuma'}</span>
+                </button>
+                <h3 className="font-heading font-bold text-sm sm:text-base text-[#E6F1FF]">Log New Clinical Vitals</h3>
+              </div>
               <button onClick={() => setIsLogModalOpen(false)} className="p-1 text-[#8892B0] hover:text-[#E6F1FF]">
                 <X className="w-5 h-5" />
               </button>
@@ -403,18 +433,29 @@ Certified by Vanguard Tele-Triage Network Tanzania`;
         <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
           <div className="relative w-full max-w-2xl bg-[#0A192F] border-2 border-[#1E3A8A] rounded-2xl shadow-2xl p-5 sm:p-6 space-y-4 max-h-[90vh] flex flex-col justify-between">
             <div>
-              <div className="flex items-start justify-between border-b border-[#1E3A8A]/40 pb-3">
-                <div>
-                  <span className="text-[10px] font-mono text-[#64FFDA] uppercase font-bold tracking-wider">
-                    Past Transcript Log • {selectedTranscript.date}
-                  </span>
-                  <h3 className="font-heading font-extrabold text-base sm:text-lg text-[#E6F1FF] mt-0.5">
-                    {selectedTranscript.title}
-                  </h3>
+              <div className="flex items-start justify-between border-b border-[#1E3A8A]/40 pb-3 gap-2">
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTranscript(null)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#112240] hover:bg-[#1E3A8A] border border-[#64FFDA]/40 hover:border-[#64FFDA] text-[#64FFDA] text-xs font-bold transition-all active:scale-95 shadow-sm group shrink-0"
+                    title="Close Transcript & Return"
+                  >
+                    <ArrowLeft className="w-4 h-4 text-[#64FFDA] group-hover:-translate-x-1 transition-transform" />
+                    <span>{currentLanguage === 'SW' ? 'Rudi Nyuma' : 'Back / Rudi Nyuma'}</span>
+                  </button>
+                  <div>
+                    <span className="text-[10px] font-mono text-[#64FFDA] uppercase font-bold tracking-wider">
+                      Past Transcript Log • {selectedTranscript.date}
+                    </span>
+                    <h3 className="font-heading font-extrabold text-sm sm:text-base text-[#E6F1FF] mt-0.5">
+                      {selectedTranscript.title}
+                    </h3>
+                  </div>
                 </div>
                 <button
                   onClick={() => setSelectedTranscript(null)}
-                  className="p-1 text-[#8892B0] hover:text-[#E6F1FF] rounded-lg"
+                  className="p-1 text-[#8892B0] hover:text-[#E6F1FF] rounded-lg shrink-0"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -441,14 +482,44 @@ Certified by Vanguard Tele-Triage Network Tanzania`;
               </div>
             </div>
 
-            <div className="pt-3 border-t border-[#1E3A8A]/40 flex items-center justify-between text-xs">
-              <span className="text-[#8892B0]">ID: {selectedTranscript.id}</span>
-              <button
-                onClick={() => setSelectedTranscript(null)}
-                className="px-5 py-2 rounded-xl bg-[#112240] hover:bg-[#1E3A8A] text-[#E6F1FF] font-bold border border-[#233554]"
-              >
-                Close Transcript
-              </button>
+            <div className="pt-3 border-t border-[#1E3A8A]/40 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="text-[#8892B0]">Ref ID: {selectedTranscript.id}</span>
+              <div className="flex items-center gap-2">
+                {onOpenShareModal && (
+                  <button
+                    onClick={() => {
+                      const userMsg = selectedTranscript.messages.find((m) => m.sender === 'user');
+                      const aiMsg = selectedTranscript.messages.find((m) => m.sender === 'ai');
+                      onOpenShareModal({
+                        consultationId: selectedTranscript.id,
+                        date: selectedTranscript.date,
+                        patientName: userProfile?.fullName || 'Victor',
+                        patientAge: userProfile?.age || 32,
+                        patientGender: userProfile?.gender || 'Male',
+                        bloodGroup: userProfile?.bloodGroup || 'O+',
+                        hemoglobinGenotype: userProfile?.hemoglobinGenotype || 'AA (Normal)',
+                        nhifCard: userProfile?.nhifNumber || '20048192-A',
+                        activeMedications: userProfile?.activeMedications,
+                        knownAllergies: userProfile?.knownAllergies,
+                        chiefComplaint: selectedTranscript.chiefComplaint || userMsg?.text || selectedTranscript.title,
+                        aiGuidance: selectedTranscript.outcomeSummary || aiMsg?.text || 'Clinical consultation transcript record.',
+                        severity: selectedTranscript.severity,
+                        actionSteps: aiMsg?.assessment?.steps,
+                      });
+                    }}
+                    className="px-4 py-2 rounded-xl bg-[#112240] hover:bg-[#1E3A8A] border border-[#64FFDA]/50 text-[#64FFDA] font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>{currentLanguage === 'SW' ? 'Shiriki Muhtasari' : 'Share Summary'}</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedTranscript(null)}
+                  className="px-5 py-2 rounded-xl bg-[#112240] hover:bg-[#1E3A8A] text-[#E6F1FF] font-bold border border-[#233554]"
+                >
+                  Close Transcript
+                </button>
+              </div>
             </div>
           </div>
         </div>

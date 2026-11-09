@@ -10,15 +10,27 @@ import {
   AlertTriangle,
   ChevronRight,
   ExternalLink,
+  ArrowLeft,
+  Pill,
+  Globe,
 } from 'lucide-react';
 import { Language, UserProfile } from '../types';
 import { translations } from '../data/mockData';
 
+export type ActiveNavTab =
+  | 'chat'
+  | 'doctor'
+  | 'facilities'
+  | 'tracker'
+  | 'profile'
+  | 'medication'
+  | 'surveillance';
+
 interface NavigationDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  activeTab: 'chat' | 'doctor' | 'facilities' | 'tracker' | 'profile';
-  onSelectTab: (tab: 'chat' | 'doctor' | 'facilities' | 'tracker' | 'profile') => void;
+  activeTab: ActiveNavTab;
+  onSelectTab: (tab: ActiveNavTab) => void;
   userProfile: UserProfile;
   currentLanguage: Language;
 }
@@ -54,8 +66,22 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       id: 'facilities' as const,
       label: t.navDrawer.facilities,
       icon: Hospital,
-      badge: 'Dar es Salaam',
+      badge: 'Booking & Maps',
       color: 'text-blue-400',
+    },
+    {
+      id: 'medication' as const,
+      label: currentLanguage === 'SW' ? 'Kikumbusho cha Dawa' : 'Pill Alarm & Tracker',
+      icon: Pill,
+      badge: '94% Adherence',
+      color: 'text-amber-400',
+    },
+    {
+      id: 'surveillance' as const,
+      label: currentLanguage === 'SW' ? 'Ramani ya Magonjwa' : 'Epidemic Surveillance',
+      icon: Globe,
+      badge: 'Tanzania Live',
+      color: 'text-[#64FFDA]',
     },
     {
       id: 'tracker' as const,
@@ -86,16 +112,26 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       <div className="fixed inset-y-0 left-0 max-w-xs sm:max-w-sm w-full bg-[#0A192F] border-r border-[#1E3A8A]/50 shadow-2xl flex flex-col justify-between overflow-y-auto">
         {/* Header Section */}
         <div>
-          <div className="p-4 border-b border-[#1E3A8A]/40 flex items-center justify-between bg-[#112240]/60">
+          <div className="p-3.5 border-b border-[#1E3A8A]/40 flex items-center justify-between bg-[#112240]/80">
+            {/* Prominent Go Back Arrow Button */}
+            <button
+              onClick={onClose}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0A192F] hover:bg-[#1E3A8A] border border-[#64FFDA]/40 hover:border-[#64FFDA] text-[#64FFDA] text-xs font-bold transition-all active:scale-95 shadow-sm group"
+              title="Close Drawer & Return to Main Screen"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#64FFDA] group-hover:-translate-x-1 transition-transform" />
+              <span>{currentLanguage === 'SW' ? 'Rudi Nyuma' : 'Back / Rudi Nyuma'}</span>
+            </button>
+
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] flex items-center justify-center border border-[#64FFDA]/30">
-                <ShieldCheck className="w-5 h-5 text-[#64FFDA]" />
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] flex items-center justify-center border border-[#64FFDA]/30">
+                <ShieldCheck className="w-4 h-4 text-[#64FFDA]" />
               </div>
               <div>
-                <h2 className="font-heading font-bold text-sm text-[#E6F1FF]">
+                <h2 className="font-heading font-bold text-xs text-[#E6F1FF]">
                   {t.navDrawer.title}
                 </h2>
-                <span className="text-[10px] text-[#64FFDA] font-medium tracking-wide">
+                <span className="text-[9px] text-[#64FFDA] font-medium tracking-wide">
                   {t.navDrawer.badge}
                 </span>
               </div>
@@ -103,9 +139,10 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
 
             <button
               onClick={onClose}
-              className="p-1.5 text-[#8892B0] hover:text-[#E6F1FF] hover:bg-[#1E3A8A]/40 rounded-lg transition-colors"
+              className="p-1.5 text-[#8892B0] hover:text-[#E6F1FF] hover:bg-[#1E3A8A]/40 rounded-lg transition-colors ml-1"
+              title="Close"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 

@@ -10,8 +10,14 @@ import {
   CheckCircle,
   AlertCircle,
   Lock,
+  ArrowLeft,
+  Pill,
+  AlertTriangle,
+  Dna,
+  Scissors,
+  Sparkles,
 } from 'lucide-react';
-import { ChronicCondition, Language, UserProfile } from '../types';
+import { ChronicCondition, Language, UserProfile, HemoglobinGenotype, SpecialHealthStatus } from '../types';
 import { translations } from '../data/mockData';
 
 interface ProfileSettingsProps {
@@ -19,6 +25,7 @@ interface ProfileSettingsProps {
   onUpdateProfile: (updated: UserProfile) => void;
   currentLanguage: Language;
   onLockProfile?: () => void;
+  onGoHome?: () => void;
 }
 
 const CHRONIC_OPTIONS: { id: ChronicCondition; labelEn: string; labelSw: string; icon: string }[] = [
@@ -30,15 +37,31 @@ const CHRONIC_OPTIONS: { id: ChronicCondition; labelEn: string; labelSw: string;
   { id: 'None', labelEn: 'None / No Known Conditions', labelSw: 'Sina / Hakuna Ugonjwa Sugu', icon: '✨' },
 ];
 
+const SPECIAL_HEALTH_OPTIONS: { id: SpecialHealthStatus; labelEn: string; labelSw: string; icon: string }[] = [
+  { id: 'Smoking', labelEn: 'Active Smoking / Tobacco', labelSw: 'Uvutaji wa Sigara / Tumbaku', icon: '🚬' },
+  { id: 'Alcohol', labelEn: 'Alcohol Consumption', labelSw: 'Unywaji wa Pombe', icon: '🍷' },
+  { id: 'Currently Pregnant', labelEn: 'Currently Pregnant', labelSw: 'Mjamzito kwa Sasa', icon: '🤰' },
+  { id: 'Lactating', labelEn: 'Lactating / Breastfeeding', labelSw: 'Anayenyonyesha Mtoto', icon: '🤱' },
+  { id: 'None', labelEn: 'None / No Special Status', labelSw: 'Hakuna / Hali ya Kawaida', icon: '✨' },
+];
+
 export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
   userProfile,
   onUpdateProfile,
   currentLanguage,
   onLockProfile,
+  onGoHome,
 }) => {
   const t = translations[currentLanguage];
 
-  const [formData, setFormData] = useState<UserProfile>({ ...userProfile });
+  const [formData, setFormData] = useState<UserProfile>({
+    ...userProfile,
+    activeMedications: userProfile.activeMedications ?? 'Artemether/Lumefantrine 80/480mg, Paracetamol 500mg',
+    knownAllergies: userProfile.knownAllergies ?? 'Penicillin, Sulfa drugs, Peanuts',
+    hemoglobinGenotype: userProfile.hemoglobinGenotype ?? 'AA (Normal)',
+    pastSurgeries: userProfile.pastSurgeries ?? 'Appendectomy 2023',
+    specialHealthStatus: userProfile.specialHealthStatus?.length ? userProfile.specialHealthStatus : ['None'],
+  });
   const [isSavedNotice, setIsSavedNotice] = useState(false);
 
   const handleConditionToggle = (condition: ChronicCondition) => {
@@ -61,6 +84,27 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
     setFormData({ ...formData, chronicConditions: updated });
   };
 
+  const handleSpecialStatusToggle = (status: SpecialHealthStatus) => {
+    let current = formData.specialHealthStatus || ['None'];
+    let updated: SpecialHealthStatus[];
+
+    if (status === 'None') {
+      updated = ['None'];
+    } else {
+      updated = current.filter((s) => s !== 'None');
+      if (updated.includes(status)) {
+        updated = updated.filter((s) => s !== status);
+        if (updated.length === 0) {
+          updated = ['None'];
+        }
+      } else {
+        updated.push(status);
+      }
+    }
+
+    setFormData({ ...formData, specialHealthStatus: updated });
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdateProfile(formData);
@@ -73,6 +117,18 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
       {/* Top Banner */}
       <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-[#112240] via-[#1E3A8A]/40 to-[#0A192F] border border-[#1E3A8A] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
         <div className="flex items-center gap-3.5">
+          {onGoHome && (
+            <button
+              type="button"
+              onClick={onGoHome}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0A192F] hover:bg-[#1E3A8A] border border-[#64FFDA]/40 hover:border-[#64FFDA] text-[#64FFDA] text-xs font-bold transition-all active:scale-95 shadow-sm group"
+              title="Return to AfyaYangu Chat"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#64FFDA] group-hover:-translate-x-1 transition-transform" />
+              <span>{currentLanguage === 'SW' ? 'Rudi Nyuma' : 'Back / Rudi Nyuma'}</span>
+            </button>
+          )}
+
           <div className="w-12 h-12 rounded-xl bg-[#1E3A8A] border border-[#64FFDA]/30 flex items-center justify-center text-[#64FFDA] shadow-md">
             <User className="w-6 h-6 text-[#64FFDA]" />
           </div>
@@ -258,6 +314,180 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
                 placeholder="+255 784 112 900 (Esther Denis - Sister)"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A192F] border border-[#233554] text-[#E6F1FF]"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Missing Clinical & Pharmacological Records */}
+        <div className="p-5 sm:p-6 rounded-2xl bg-[#112240] border border-[#233554] space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#1E3A8A]/30 pb-3">
+            <h3 className="font-heading font-bold text-sm text-[#64FFDA] uppercase tracking-wider flex items-center gap-2">
+              <Pill className="w-4 h-4 text-[#64FFDA]" />
+              <span>
+                {currentLanguage === 'SW'
+                  ? '3. Taarifa za Dawa, Mzio na Historia ya Kliniki'
+                  : '3. Clinical Pharmacology & Surgical History'}
+              </span>
+            </h3>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1E3A8A]/50 border border-[#2563EB]/40 text-[10px] font-mono text-[#64FFDA] font-semibold">
+              <Sparkles className="w-3 h-3 text-[#64FFDA]" />
+              {currentLanguage === 'SW'
+                ? 'AI Inachambua Dawa & Mzio Papo Hapo'
+                : 'AI Real-Time Drug & Allergy Cross-Check Active'}
+            </span>
+          </div>
+
+          <div className="space-y-4 text-xs">
+            {/* 1. Active Medications & Dosage */}
+            <div>
+              <label className="block text-[#8892B0] mb-1 font-semibold flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-[#E6F1FF]">
+                  <Pill className="w-3.5 h-3.5 text-[#64FFDA]" />
+                  {currentLanguage === 'SW'
+                    ? 'Dawa Unazotumia Sasa & Vipimo (Active Medications & Dosage)'
+                    : 'Active Medications & Dosage'}
+                </span>
+                <span className="text-[10px] text-[#64FFDA] font-mono">Real-Time Interaction Monitoring</span>
+              </label>
+              <input
+                type="text"
+                value={formData.activeMedications || ''}
+                onChange={(e) => setFormData({ ...formData, activeMedications: e.target.value })}
+                placeholder="e.g., Artemether/Lumefantrine 80/480mg, Paracetamol 500mg"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A192F] border border-[#233554] text-[#E6F1FF] focus:border-[#64FFDA] focus:outline-none transition-all placeholder-[#8892B0]/50"
+              />
+              <p className="text-[11px] text-[#8892B0] mt-1">
+                {currentLanguage === 'SW'
+                  ? 'Mfano: Artemether/Lumefantrine 80/480mg, Paracetamol 500mg. Daktari wa AI huchambua dawa hizi kuzuia migongano ya dawa mwilini.'
+                  : 'Specify current oral or injectable prescriptions. The clinical AI continuously monitors for contraindications and cumulative dose limits.'}
+              </p>
+            </div>
+
+            {/* 2. Known Allergies & Drug Reactions */}
+            <div>
+              <label className="block text-[#8892B0] mb-1 font-semibold flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-rose-300">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                  {currentLanguage === 'SW'
+                    ? 'Mzio wa Dawa & Madhara ya Awali (Known Allergies & Drug Reactions)'
+                    : 'Known Allergies & Drug Reactions'}
+                </span>
+                <span className="text-[10px] text-rose-400 font-mono font-bold">Auto-Blocked in Triage</span>
+              </label>
+              <input
+                type="text"
+                value={formData.knownAllergies || ''}
+                onChange={(e) => setFormData({ ...formData, knownAllergies: e.target.value })}
+                placeholder="e.g., Penicillin, Sulfa drugs, Peanuts"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A192F] border border-rose-500/40 text-rose-200 focus:border-rose-400 focus:outline-none transition-all placeholder-rose-200/40"
+              />
+              <p className="text-[11px] text-rose-300/80 mt-1">
+                {currentLanguage === 'SW'
+                  ? 'Mzio kama Penicillin, Sulfa, Aspirin. Akili bandia (AI) itazuia dawa hizi na kutoa tahadhari ya dharura.'
+                  : 'Document adverse reactions (e.g. Penicillin, Sulfa drugs, NSAIDs, Peanuts). AI cross-checks will automatically flag and avoid recommending allergen-related medications.'}
+              </p>
+            </div>
+
+            {/* Grid: 3. Hemoglobin Genotype & 4. Past Surgeries */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              {/* 3. Hemoglobin Genotype */}
+              <div>
+                <label className="block text-[#8892B0] mb-1 font-semibold flex items-center gap-1.5 text-[#E6F1FF]">
+                  <Dna className="w-3.5 h-3.5 text-cyan-400" />
+                  {currentLanguage === 'SW'
+                    ? 'Vinasaba vya Damu (Hemoglobin Genotype)'
+                    : 'Hemoglobin Genotype'}
+                </label>
+                <select
+                  value={formData.hemoglobinGenotype || 'AA (Normal)'}
+                  onChange={(e) => setFormData({ ...formData, hemoglobinGenotype: e.target.value as HemoglobinGenotype })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A192F] border border-[#233554] text-[#E6F1FF] focus:border-[#64FFDA] focus:outline-none transition-all font-mono"
+                >
+                  <option value="AA (Normal)">AA (Normal)</option>
+                  <option value="AS (Sickle Cell Trait)">AS (Sickle Cell Trait)</option>
+                  <option value="SS (Sickle Cell Anemia)">SS (Sickle Cell Anemia)</option>
+                  <option value="Unknown">Unknown</option>
+                </select>
+                <p className="text-[11px] text-[#8892B0] mt-1">
+                  {currentLanguage === 'SW'
+                    ? 'Muhimu kwa tahadhari za Selimundu na mgogoro wa hewa (hypoxia).'
+                    : 'Guides oxygenation thresholds, hydration protocols, and sickle crisis triage.'}
+                </p>
+              </div>
+
+              {/* 4. Past Surgeries & Major Hospitalizations */}
+              <div>
+                <label className="block text-[#8892B0] mb-1 font-semibold flex items-center gap-1.5 text-[#E6F1FF]">
+                  <Scissors className="w-3.5 h-3.5 text-amber-300" />
+                  {currentLanguage === 'SW'
+                    ? 'Upasuaji wa Awali & Kulazwa (Past Surgeries)'
+                    : 'Past Surgeries & Major Hospitalizations'}
+                </label>
+                <input
+                  type="text"
+                  value={formData.pastSurgeries || ''}
+                  onChange={(e) => setFormData({ ...formData, pastSurgeries: e.target.value })}
+                  placeholder="e.g., Appendectomy 2023"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A192F] border border-[#233554] text-[#E6F1FF] focus:border-[#64FFDA] focus:outline-none transition-all placeholder-[#8892B0]/50"
+                />
+                <p className="text-[11px] text-[#8892B0] mt-1">
+                  {currentLanguage === 'SW'
+                    ? 'Mfano: Appendectomy 2023, Upasuaji wa Uzazi (C-Section 2021).'
+                    : 'Informs differential diagnoses regarding post-surgical adhesions or anatomical history.'}
+                </p>
+              </div>
+            </div>
+
+            {/* 5. Special Health Status (Checkboxes: Smoking / Alcohol / Currently Pregnant / Lactating / None) */}
+            <div className="pt-2 border-t border-[#1E3A8A]/30">
+              <label className="block text-[#8892B0] mb-2 font-semibold flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-amber-300">
+                  <Heart className="w-3.5 h-3.5 text-amber-300" />
+                  {currentLanguage === 'SW'
+                    ? 'Hali Maalumu ya Afya & Mtindo wa Maisha (Special Health Status)'
+                    : 'Special Health Status & Lifestyle'}
+                </span>
+                <span className="text-[10px] text-[#8892B0] italic">
+                  {currentLanguage === 'SW' ? 'Chagua zote zinazokuhusu' : 'Select all that apply'}
+                </span>
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                {SPECIAL_HEALTH_OPTIONS.map((opt) => {
+                  const isChecked = (formData.specialHealthStatus || ['None']).includes(opt.id);
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => handleSpecialStatusToggle(opt.id)}
+                      className={`flex items-center gap-2.5 p-3 rounded-xl border text-left text-xs transition-all ${
+                        isChecked
+                          ? 'bg-[#1E3A8A]/50 border-[#64FFDA] text-[#E6F1FF] shadow-sm font-semibold'
+                          : 'bg-[#0A192F] border-[#233554] text-[#8892B0] hover:text-[#E6F1FF]'
+                      }`}
+                    >
+                      <span className="text-base">{opt.icon}</span>
+                      <span className="flex-1">
+                        {currentLanguage === 'SW' ? opt.labelSw : opt.labelEn}
+                      </span>
+                      <div
+                        className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors ${
+                          isChecked ? 'bg-[#64FFDA] border-[#64FFDA]' : 'border-[#8892B0]'
+                        }`}
+                      >
+                        {isChecked && (
+                          <span className="text-[#0A192F] text-[10px] font-extrabold leading-none">✓</span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-[#8892B0] mt-2">
+                {currentLanguage === 'SW'
+                  ? 'Hali ya ujauzito na unyonyeshaji inazingatiwa kwa usalama wa mtoto kabla ya daktari wa AI kupendekeza dawa yoyote.'
+                  : 'Pregnancy and lactation flags enforce obstetric safety filters. Smoking and alcohol trigger metabolic interaction alerts.'}
+              </p>
             </div>
           </div>
         </div>

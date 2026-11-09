@@ -9,6 +9,7 @@ import {
   X,
   ShieldCheck,
   AlertCircle,
+  ArrowLeft,
 } from 'lucide-react';
 import { Language, UserProfile } from '../types';
 
@@ -139,11 +140,22 @@ export const SecurityLockModal: React.FC<SecurityLockModalProps> = ({
           isShaking ? 'animate-shake' : ''
         }`}
       >
-        {/* Top Header with Close and Lock Icon */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
+        {/* Top Header with Go Back, Lock Icon and Close */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            {/* Prominent Go Back Button */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#112240] hover:bg-[#1E3A8A] border border-[#64FFDA]/40 hover:border-[#64FFDA] text-[#64FFDA] text-xs font-bold transition-all active:scale-95 shadow-sm group shrink-0"
+              title="Return to Main Screen"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#64FFDA] group-hover:-translate-x-1 transition-transform" />
+              <span>{currentLanguage === 'SW' ? 'Rudi Nyuma' : 'Back / Rudi Nyuma'}</span>
+            </button>
+
             <div
-              className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all ${
+              className={`w-10 h-10 rounded-2xl flex items-center justify-center border-2 transition-all shrink-0 hidden xs:flex sm:flex ${
                 isSuccess
                   ? 'bg-emerald-500/20 border-emerald-400 text-emerald-400'
                   : errorMessage
@@ -152,25 +164,25 @@ export const SecurityLockModal: React.FC<SecurityLockModalProps> = ({
               }`}
             >
               {isSuccess ? (
-                <Unlock className="w-6 h-6 animate-bounce" />
+                <Unlock className="w-5 h-5 animate-bounce" />
               ) : (
-                <Lock className="w-6 h-6" />
+                <Lock className="w-5 h-5" />
               )}
             </div>
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#1E3A8A]/50 border border-[#2563EB]/40 text-[10px] font-mono font-bold text-[#64FFDA] uppercase">
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#1E3A8A]/50 border border-[#2563EB]/40 text-[9px] sm:text-[10px] font-mono font-bold text-[#64FFDA] uppercase">
                 <ShieldCheck className="w-3 h-3 text-[#64FFDA]" />
-                <span>256-Bit Encrypted Vault</span>
+                <span>256-Bit Encrypted</span>
               </div>
-              <h3 className="text-base sm:text-lg font-heading font-extrabold text-[#E6F1FF] mt-1 leading-tight">
-                Authentication Required / Inahitaji Nambari ya Siri
+              <h3 className="text-sm sm:text-base font-heading font-extrabold text-[#E6F1FF] mt-0.5 leading-tight">
+                Authentication Required
               </h3>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 text-[#8892B0] hover:text-[#E6F1FF] hover:bg-[#112240] rounded-lg transition-colors"
+            className="p-1.5 text-[#8892B0] hover:text-[#E6F1FF] hover:bg-[#112240] rounded-lg transition-colors shrink-0"
           >
             <X className="w-5 h-5" />
           </button>

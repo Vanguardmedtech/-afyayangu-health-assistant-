@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  ChatAttachment,
   ChatMessage,
   Doctor,
   HealthMetricEntry,
@@ -24,6 +25,11 @@ import { FacilityFinder } from './components/FacilityFinder';
 import { HealthTracker } from './components/HealthTracker';
 import { ProfileSettings } from './components/ProfileSettings';
 import { SecurityLockModal } from './components/SecurityLockModal';
+import { NotificationModal, NotificationPreferences } from './components/NotificationModal';
+import { NotificationToast, ToastNotification } from './components/NotificationToast';
+import { ShareSummaryModal, ConsultationSummaryPayload } from './components/ShareSummaryModal';
+import { MedicationTracker } from './components/MedicationTracker';
+import { EpidemicSurveillanceDashboard } from './components/EpidemicSurveillanceDashboard';
 
 export default function App() {
   // Application State
@@ -32,7 +38,16 @@ export default function App() {
     const saved = localStorage.getItem('vanguard_user_profile');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return {
+          ...initialUserProfile,
+          ...parsed,
+          activeMedications: parsed.activeMedications ?? initialUserProfile.activeMedications,
+          knownAllergies: parsed.knownAllergies ?? initialUserProfile.knownAllergies,
+          hemoglobinGenotype: parsed.hemoglobinGenotype ?? initialUserProfile.hemoglobinGenotype,
+          pastSurgeries: parsed.pastSurgeries ?? initialUserProfile.pastSurgeries,
+          specialHealthStatus: parsed.specialHealthStatus?.length ? parsed.specialHealthStatus : initialUserProfile.specialHealthStatus,
+        };
       } catch (e) {
         // fallback
       }
@@ -48,7 +63,7 @@ export default function App() {
 
   // Navigation Drawer & Tabs
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'chat' | 'doctor' | 'facilities' | 'tracker' | 'profile'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'doctor' | 'facilities' | 'tracker' | 'profile' | 'medication' | 'surveillance'>('chat');
 
   // Security & Privacy Lock for Patient Profile & Settings
   const [isProfileUnlocked, setIsProfileUnlocked] = useState(false);
@@ -57,6 +72,83 @@ export default function App() {
   // Doctor Payment & Call Modals
   const [isDoctorModalOpen, setIsDoctorModalOpen] = useState(false);
   const [callingDoctor, setCallingDoctor] = useState<Doctor | null>(null);
+
+  // Simulated Smart Push Notifications State
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState<number>(2);
+  const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences>(() => {
+    const saved = localStorage.getItem('vanguard_notification_prefs');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return {
+      medicationReminders: true,
+      waterAndVitals: true,
+      doctorAppointments: true,
+    };
+  });
+  const [activeToast, setActiveToast] = useState<ToastNotification | null>(null);
+
+  // Share Consultation Summary State
+  const [shareSummaryData, setShareSummaryData] = useState<ConsultationSummaryPayload | null>(null);
+
+  // Persist notification preferences
+  useEffect(() => {
+    localStorage.setItem('vanguard_notification_prefs', JSON.stringify(notificationPreferences));
+  }, [notificationPreferences]);
+
+  // Handler for Trigger Test Notification (Live Demo)
+  const handleTriggerTestNotification = (customType: 'medication' | 'vitals' | 'appointment' = 'medication') => {
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    let title = '';
+    let message = '';
+
+    if (customType === 'medication') {
+      title =
+        currentLanguage === 'SW'
+          ? 'Kikumbusho cha Dawa: Dozi ya Asubuhi'
+          : 'Medication Alert: Morning Dosage Due';
+      message = userProfile.activeMedications
+        ? currentLanguage === 'SW'
+          ? `Muda wa kumeza dawa yako (${userProfile.activeMedications}) pamoja na glasi ya maji.`
+          : `Time to take your scheduled dose: ${userProfile.activeMedications} with clean water.`
+        : currentLanguage === 'SW'
+        ? 'Muda wa kumeza dawa yako ya asubuhi. Zingatia kutumia baada ya chakula.'
+        : 'Time to take your prescribed morning medication. Ensure taken after food.';
+    } else if (customType === 'vitals') {
+      title =
+        currentLanguage === 'SW'
+          ? 'Kiwango cha Maji na Shinikizo la Damu'
+          : 'Daily Water & Vitals Check-in';
+      message =
+        currentLanguage === 'SW'
+          ? 'Hali ya hewa Dar es Salaam ni joto: Kunywa glasi 1 ya maji safi na kagua BP yako.'
+          : 'Coastal humidity is high: Drink 1 glass of water now to maintain optimal hydration.';
+    } else {
+      title =
+        currentLanguage === 'SW'
+          ? 'Miadi ya Daktari: Dk. Mwana Kalili'
+          : 'Doctor Appointment Alert: Online';
+      message =
+        currentLanguage === 'SW'
+          ? 'Daktari wako yuko hewani na anapatikana kwa mashauriano ya moja kwa moja.'
+          : 'Dr. Mwana Kalili is currently online and ready for your tele-consultation.';
+    }
+
+    const newToast: ToastNotification = {
+      id: `toast-${Date.now()}`,
+      title,
+      message,
+      type: customType,
+      timestamp: timeNow,
+    };
+
+    setActiveToast(newToast);
+    setUnreadNotificationCount((prev) => prev + 1);
+  };
 
   // Chat State
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -117,7 +209,7 @@ export default function App() {
   };
 
   // Chat message handling with live dynamic Gemini AI generation and automatic logging
-  const handleSendMessage = async (text: string) => {
+  const handleSendMessage = async (text: string, attachment?: ChatAttachment) => {
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     const userMessage: ChatMessage = {
@@ -126,14 +218,19 @@ export default function App() {
       text,
       timestamp: nowTime,
       language: currentLanguage,
+      attachment,
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setIsAiTyping(true);
 
     try {
+      const promptWithAttachment = attachment
+        ? `${text}\n[Attached Patient ${attachment.type === 'image' ? 'Clinical Image' : 'Document'}: ${attachment.name}]`
+        : text;
+
       const clinicalReply = await sendChatMessageToGemini(
-        text,
+        promptWithAttachment,
         messages,
         userProfile,
         currentLanguage
@@ -211,7 +308,14 @@ export default function App() {
         onToggleLanguage={handleToggleLanguage}
         onOpenDrawer={() => setIsDrawerOpen(true)}
         onOpenDoctorModal={() => setIsDoctorModalOpen(true)}
+        onOpenNotifications={() => {
+          setIsNotificationModalOpen(true);
+          setUnreadNotificationCount(0);
+        }}
+        unreadNotificationCount={unreadNotificationCount}
         userProfile={userProfile}
+        activeTab={activeTab}
+        onGoHome={() => setActiveTab('chat')}
       />
 
       {/* Main Module Content based on active navigation */}
@@ -224,6 +328,7 @@ export default function App() {
             onNavigateToFacilities={() => setActiveTab('facilities')}
             onNavigateToTracker={() => setActiveTab('tracker')}
             onClearChat={handleClearChat}
+            onOpenShareModal={(payload) => setShareSummaryData(payload)}
             userProfile={userProfile}
             currentLanguage={currentLanguage}
             isAiTyping={isAiTyping}
@@ -243,7 +348,36 @@ export default function App() {
         )}
 
         {activeTab === 'facilities' && (
-          <FacilityFinder currentLanguage={currentLanguage} />
+          <FacilityFinder
+            currentLanguage={currentLanguage}
+            userProfile={userProfile}
+            onGoHome={() => setActiveTab('chat')}
+          />
+        )}
+
+        {activeTab === 'medication' && (
+          <MedicationTracker
+            userProfile={userProfile}
+            currentLanguage={currentLanguage}
+            onGoHome={() => setActiveTab('chat')}
+            onTriggerGlobalToast={(title, message, type) => {
+              setActiveToast({
+                id: `toast-${Date.now()}`,
+                title,
+                message,
+                type,
+                timestamp: 'Now',
+              });
+              setUnreadNotificationCount((prev) => prev + 1);
+            }}
+          />
+        )}
+
+        {activeTab === 'surveillance' && (
+          <EpidemicSurveillanceDashboard
+            currentLanguage={currentLanguage}
+            onGoHome={() => setActiveTab('chat')}
+          />
         )}
 
         {activeTab === 'tracker' && (
@@ -252,6 +386,9 @@ export default function App() {
             onAddMetric={handleAddMetric}
             savedConsultations={savedConsultations}
             currentLanguage={currentLanguage}
+            userProfile={userProfile}
+            onOpenShareModal={(payload) => setShareSummaryData(payload)}
+            onGoHome={() => setActiveTab('chat')}
           />
         )}
 
@@ -260,6 +397,7 @@ export default function App() {
             userProfile={userProfile}
             onUpdateProfile={setUserProfile}
             currentLanguage={currentLanguage}
+            onGoHome={() => setActiveTab('chat')}
             onLockProfile={() => {
               setIsProfileUnlocked(false);
               setActiveTab('chat');
@@ -330,6 +468,31 @@ export default function App() {
           currentLanguage={currentLanguage}
         />
       )}
+
+      {/* Simulated Smart Push Notifications Modal & Settings */}
+      <NotificationModal
+        isOpen={isNotificationModalOpen}
+        onClose={() => setIsNotificationModalOpen(false)}
+        currentLanguage={currentLanguage}
+        userProfile={userProfile}
+        preferences={notificationPreferences}
+        onUpdatePreferences={setNotificationPreferences}
+        onTriggerTestNotification={handleTriggerTestNotification}
+      />
+
+      {/* Share / Export Consultation Summary Modal ("Shiriki Mjadala") */}
+      <ShareSummaryModal
+        isOpen={!!shareSummaryData}
+        onClose={() => setShareSummaryData(null)}
+        summaryData={shareSummaryData}
+        currentLanguage={currentLanguage}
+      />
+
+      {/* Realistic Sliding Top-Right Push Notification Toast */}
+      <NotificationToast
+        notification={activeToast}
+        onClose={() => setActiveToast(null)}
+      />
     </div>
   );
 }

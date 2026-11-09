@@ -13,6 +13,7 @@ import {
   Smartphone,
   Copy,
   Check,
+  ArrowLeft,
 } from 'lucide-react';
 import { Doctor, ConsultationTier, Language, UserProfile } from '../types';
 import { verifiedDoctors, consultationTiers, translations } from '../data/mockData';
@@ -89,16 +90,26 @@ export const DoctorPaymentModal: React.FC<DoctorPaymentModalProps> = ({
     <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md">
       <div className="relative w-full max-w-2xl bg-[#0A192F] border-2 border-[#1E3A8A] rounded-2xl shadow-2xl overflow-hidden my-4">
         {/* Top Header */}
-        <div className="p-4 sm:p-5 border-b border-[#1E3A8A]/50 bg-gradient-to-r from-[#112240] via-[#1E3A8A]/40 to-[#0A192F] flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-[#1E3A8A]/50 bg-gradient-to-r from-[#112240] via-[#1E3A8A]/40 to-[#0A192F] flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#1E3A8A] border border-[#64FFDA]/30 flex items-center justify-center text-[#64FFDA] shadow-md">
+            {/* Prominent Go Back Button */}
+            <button
+              onClick={handleResetFlow}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0A192F] hover:bg-[#1E3A8A] border border-[#64FFDA]/40 hover:border-[#64FFDA] text-[#64FFDA] text-xs font-bold transition-all active:scale-95 shadow-sm group"
+              title="Return to AfyaYangu Chat"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#64FFDA] group-hover:-translate-x-1 transition-transform" />
+              <span>{currentLanguage === 'SW' ? 'Rudi Nyuma' : 'Back / Rudi Nyuma'}</span>
+            </button>
+
+            <div className="w-10 h-10 rounded-xl bg-[#1E3A8A] border border-[#64FFDA]/30 items-center justify-center text-[#64FFDA] shadow-md hidden sm:flex">
               <PhoneCall className="w-5 h-5 text-[#64FFDA] animate-pulse" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-heading font-extrabold text-[#E6F1FF]">
+              <h2 className="text-base sm:text-xl font-heading font-extrabold text-[#E6F1FF]">
                 {t.doctorFlow.title}
               </h2>
-              <p className="text-xs text-[#8892B0]">
+              <p className="text-[11px] sm:text-xs text-[#8892B0]">
                 {t.doctorFlow.subtitle}
               </p>
             </div>

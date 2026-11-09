@@ -12,20 +12,30 @@ import {
   AlertCircle,
   ExternalLink,
   X,
+  ArrowLeft,
+  Calendar,
 } from 'lucide-react';
-import { HealthFacility, Language } from '../types';
-import { darHealthFacilities, translations } from '../data/mockData';
+import { HealthFacility, Language, UserProfile } from '../types';
+import { darHealthFacilities, translations, initialUserProfile } from '../data/mockData';
+import { DiagnosticBookingModal } from './DiagnosticBookingModal';
 
 interface FacilityFinderProps {
   currentLanguage: Language;
+  userProfile?: UserProfile;
+  onGoHome?: () => void;
 }
 
-export const FacilityFinder: React.FC<FacilityFinderProps> = ({ currentLanguage }) => {
+export const FacilityFinder: React.FC<FacilityFinderProps> = ({
+  currentLanguage,
+  userProfile = initialUserProfile,
+  onGoHome,
+}) => {
   const t = translations[currentLanguage];
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'xray' | 'lab' | 'emergency'>('all');
   const [selectedFacility, setSelectedFacility] = useState<HealthFacility | null>(null);
+  const [bookingFacility, setBookingFacility] = useState<HealthFacility | null>(null);
 
   const filteredFacilities = useMemo(() => {
     return darHealthFacilities.filter((facility) => {
@@ -52,6 +62,17 @@ export const FacilityFinder: React.FC<FacilityFinderProps> = ({ currentLanguage 
       {/* Top Banner */}
       <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-[#112240] via-[#1E3A8A]/40 to-[#0A192F] border border-[#1E3A8A] flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
         <div className="flex items-center gap-3.5">
+          {onGoHome && (
+            <button
+              onClick={onGoHome}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0A192F] hover:bg-[#1E3A8A] border border-[#64FFDA]/40 hover:border-[#64FFDA] text-[#64FFDA] text-xs font-bold transition-all active:scale-95 shadow-sm group"
+              title="Return to AfyaYangu Chat"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#64FFDA] group-hover:-translate-x-1 transition-transform" />
+              <span>{currentLanguage === 'SW' ? 'Rudi Nyuma' : 'Back / Rudi Nyuma'}</span>
+            </button>
+          )}
+
           <div className="w-12 h-12 rounded-xl bg-[#1E3A8A] border border-[#64FFDA]/30 flex items-center justify-center text-[#64FFDA] shadow-md">
             <Hospital className="w-6 h-6 text-[#64FFDA]" />
           </div>
@@ -208,8 +229,29 @@ export const FacilityFinder: React.FC<FacilityFinderProps> = ({ currentLanguage 
               </div>
             </div>
 
+            {/* Book Diagnostic Test Button on Verified Partner Cards */}
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => setBookingFacility(facility)}
+                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] hover:from-[#2563EB] hover:to-[#3b82f6] text-[#E6F1FF] hover:text-[#64FFDA] border border-[#2563EB]/50 hover:border-[#64FFDA]/50 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-98 group/btn"
+              >
+                <Calendar className="w-3.5 h-3.5 text-[#64FFDA] group-hover/btn:scale-110 transition-transform" />
+                <span>
+                  {currentLanguage === 'SW'
+                    ? 'Miadi ya Vipimo (X-Ray / Lab / Daktari)'
+                    : 'Book Diagnostic Test & Services'}
+                </span>
+                {facility.isNhifAccepted && (
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    NHIF
+                  </span>
+                )}
+              </button>
+            </div>
+
             {/* Bottom Actions: Call Emergency & Directions Modal */}
-            <div className="mt-5 pt-3 border-t border-[#1E3A8A]/30 flex items-center justify-between gap-2">
+            <div className="mt-3 pt-3 border-t border-[#1E3A8A]/30 flex items-center justify-between gap-2">
               <a
                 href={`tel:${facility.emergencyPhone}`}
                 className="flex-1 py-2 px-3 rounded-xl bg-red-900/30 hover:bg-red-800/40 border border-red-500/40 text-red-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
@@ -251,15 +293,27 @@ export const FacilityFinder: React.FC<FacilityFinderProps> = ({ currentLanguage 
         <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
           <div className="relative w-full max-w-lg bg-[#0A192F] border-2 border-[#1E3A8A] rounded-2xl shadow-2xl p-5 sm:p-6 space-y-4">
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-heading font-extrabold text-[#E6F1FF]">
-                  {selectedFacility.name}
-                </h3>
-                <p className="text-xs text-[#64FFDA] mt-0.5">{selectedFacility.address}</p>
+              <div className="flex items-center gap-2.5">
+                {/* Prominent Go Back Button */}
+                <button
+                  onClick={() => setSelectedFacility(null)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#112240] hover:bg-[#1E3A8A] border border-[#64FFDA]/40 hover:border-[#64FFDA] text-[#64FFDA] text-xs font-bold transition-all active:scale-95 shadow-sm group shrink-0"
+                  title="Close Hospital Details & Return"
+                >
+                  <ArrowLeft className="w-4 h-4 text-[#64FFDA] group-hover:-translate-x-1 transition-transform" />
+                  <span>{currentLanguage === 'SW' ? 'Rudi Nyuma' : 'Back / Rudi Nyuma'}</span>
+                </button>
+
+                <div>
+                  <h3 className="text-base sm:text-lg font-heading font-extrabold text-[#E6F1FF]">
+                    {selectedFacility.name}
+                  </h3>
+                  <p className="text-xs text-[#64FFDA] mt-0.5">{selectedFacility.address}</p>
+                </div>
               </div>
               <button
                 onClick={() => setSelectedFacility(null)}
-                className="p-1.5 text-[#8892B0] hover:text-[#E6F1FF] rounded-lg"
+                className="p-1.5 text-[#8892B0] hover:text-[#E6F1FF] rounded-lg shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -322,17 +376,23 @@ export const FacilityFinder: React.FC<FacilityFinderProps> = ({ currentLanguage 
               </div>
             </div>
 
-            <div className="pt-2 flex items-center gap-3">
-              <a
-                href={`tel:${selectedFacility.emergencyPhone}`}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold text-center flex items-center justify-center gap-2 transition-colors"
+            <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const target = selectedFacility;
+                  setSelectedFacility(null);
+                  setBookingFacility(target);
+                }}
+                className="w-full sm:flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#64FFDA] to-[#38bdf8] text-[#0A192F] text-xs font-black text-center flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
               >
-                <Phone className="w-4 h-4" />
-                <span>Call Emergency Line</span>
-              </a>
+                <Calendar className="w-4 h-4" />
+                <span>Book Diagnostic Test</span>
+              </button>
+
               <button
                 onClick={() => setSelectedFacility(null)}
-                className="flex-1 py-2.5 rounded-xl bg-[#112240] hover:bg-[#1E3A8A] text-[#E6F1FF] border border-[#233554] text-xs font-bold transition-colors"
+                className="w-full sm:flex-1 py-2.5 rounded-xl bg-[#112240] hover:bg-[#1E3A8A] text-[#E6F1FF] border border-[#233554] text-xs font-bold transition-colors"
               >
                 Close View
               </button>
@@ -340,6 +400,15 @@ export const FacilityFinder: React.FC<FacilityFinderProps> = ({ currentLanguage 
           </div>
         </div>
       )}
+
+      {/* Diagnostic & Service Appointment Booking Modal */}
+      <DiagnosticBookingModal
+        isOpen={!!bookingFacility}
+        onClose={() => setBookingFacility(null)}
+        facility={bookingFacility}
+        userProfile={userProfile}
+        currentLanguage={currentLanguage}
+      />
     </div>
   );
 };
